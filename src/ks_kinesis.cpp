@@ -5,15 +5,19 @@
 #include <aws/kinesis/model/Record.h>
 #include <aws/core/utils/Outcome.h>
 
+#include <iostream>
+#include <unistd.h>
+
 #include "ks_kinesis.h"
 
+using namespace std;
 using namespace Aws::Client;
 using namespace Aws::Utils;
 using namespace Aws::Kinesis;
 using namespace Aws::Kinesis::Model;
 
 // push 数据
-void KsKinesis::StreamDataPush(const Aws::Vector<ByteBuffer>& data) {
+void KsKinesis::KsStreamDataPush(const Aws::Vector<ByteBuffer>& data) {
 	PutRecordsRequest putRecordsRequest;
 	putRecordsRequest.SetStreamName(m_streamName);
 
@@ -36,45 +40,61 @@ void KsKinesis::StreamDataPush(const Aws::Vector<ByteBuffer>& data) {
 }
 	
 	// 获取stream描述
-void KsKinesis::StreamDescription() {
+void KsKinesis::KsStreamDescription() {
 	DescribeStreamRequest describeStreamRequest;
 	describeStreamRequest.SetStreamName(m_streamName); // 必须指定流的名字，不然不能获取信息
 
 	DescribeStreamOutcome describeStreamOutcome = m_client->DescribeStream(describeStreamRequest);
 
 	if (describeStreamOutcome.IsSuccess()) {
-		cout << describeStreamOutcome.GetResult().GetStreamDescription().GetStreamName() << endl;
-		cout << describeStreamOutcome.GetResult().GetStreamDescription().GetHasMoreShards() << endl;
+		StreamDescription sd = describeStreamOutcome.GetResult().GetStreamDescription();
+		cout << "streamName: "<< sd.GetStreamName() << endl;
+
+		do {
+			const Aws::Vector<Shard> shards = sd.GetShards();
+			for (auto s : shards) {
+				cout << "shards: " << s.GetShardId() << endl;
+			}
+		}while (sd.GetHasMoreShards());
+
+		cout << "HasMoreShards:" << sd.GetHasMoreShards() << endl;
 	} else {
 		cout << "get describeStream err: " + describeStreamOutcome.GetError().GetMessage() << endl;
 	}
 }
 
-void KsKinesis::StreamDataPull() {
+Aws::Vector<Record> KsKinesis::KsStreamDataPull() {
+	Aws::Vector<Record> res;
 	GetRecordsRequest getRecordsRequest;
 	getRecordsRequest.SetLimit(10);
-	Aws::String iter = SetStreamDataIteratorHorizon("gift", "ShardId-000000000002");
+	Aws::String iter = SetStreamDataIteratorHorizon(m_streamName, "ShardId-000000000002");
 	if (iter.length() > 0) {
 		getRecordsRequest.SetShardIterator(iter);
 	} else {
 		cout << "get iterator err " << endl;
-		return;
+		return res;
 	}
 
+	//while(true) {
 	for (auto i = 1; i < 30; i++){
 		GetRecordsOutcome outcome = m_client->GetRecords(getRecordsRequest);
 		if (outcome.IsSuccess()) {
-			Aws::Vector<Record > rs = outcome.GetResult().GetRecords();
-			for (auto r : rs) {
-				ByteBuffer b = r.GetData();
-				cout << b.GetUnderlyingData() << endl;
+			Aws::Vector<Record> rs= outcome.GetResult().GetRecords();
+			if (rs.size()) {
+				res.insert(res.end(), rs.begin(), rs.end());
 			}
-			cout << "---->>>>><<<<<<<<-------" << endl;
+			//for (auto r : rs) {
+				//ByteBuffer b = r.GetData();
+				//cout << b.GetUnderlyingData() << endl;
+			//}
+			cout << "---->>>>> get num: "<< i << "<<-------" << endl;
 		} else {
 			cout << "get records err : " << outcome.GetError().GetMessage() << endl;
 		}
 		getRecordsRequest.SetShardIterator(outcome.GetResult().GetNextShardIterator());
+		//::sleep(1);
 	}
+	return res;
 }
 
 Aws::String KsKinesis::SetStreamDataIteratorHorizon(const Aws::String streamName, const Aws::String shardId) {
@@ -127,25 +147,28 @@ void KsKinesis::OnDescribeStreamOutcomeReceived(const KinesisClient*, const Mode
 
 }
 
-
-int main() {
+int xmain() {
 	Aws::SDKOptions options;
 	Aws::InitAPI(options);
 
-	KsKinesis ks("gift", "1111");
+	KsKinesis ks("gift", "ap-southeast-1");
 
 	for (int i = 0; i < 2; ++i) {
 		Aws::String event1("Event #1 c++ test");
 		Aws::String event2("Event #2 cxx test");
 
-		//		producer.StreamDataPush( {
-		//				ByteBuffer((unsigned char*)event1.c_str(), event1.length()),
-		//				ByteBuffer((unsigned char*)event2.c_str(), event2.length())
-		//		});
+		ks.KsStreamDataPush( {
+				ByteBuffer((unsigned char*)event1.c_str(), event1.length()),
+				ByteBuffer((unsigned char*)event2.c_str(), event2.length())
+				});
 	}
 
-	ks.StreamDescription();
-	//ks.StreamDataPull();
+	ks.KsStreamDescription();
+
+	for (auto rs:ks.KsStreamDataPull()) {
+		ByteBuffer b = rs.GetData();
+		cout << b.GetUnderlyingData() << endl;
+	}
 
 	Aws::ShutdownAPI(options);
 	return 0;

@@ -6,8 +6,10 @@
 
 using namespace std;
 
+fileFilterType defaultIsFilter = [](const char*, const char*) {return true;};
+
 // 判断是否是文件夹
-bool Scripts::IsFolder(const char* dirName) {
+bool KsScripts::IsFolder(const char* dirName) {
 	if ( dirName == nullptr) {
 		cout << "IsFolder:: dirName is nullptr";
 		return false;
@@ -22,7 +24,7 @@ bool Scripts::IsFolder(const char* dirName) {
 }
 
 // 判断是否是文件夹
-bool Scripts::IsFolder(const string &dirName) {
+bool KsScripts::IsFolder(const string &dirName) {
 	if (dirName.empty()) {
 		cout << "IsFoler:: dirName is empty" << endl;
 		return false;
@@ -30,7 +32,7 @@ bool Scripts::IsFolder(const string &dirName) {
 	return IsFolder(dirName.data());
 }
 
-vector<string> Scripts::ForEachFile(const string &dirName, fileFilterType filter, bool sub) {
+vector<string> KsScripts::ForEachFile(const string &dirName, fileFilterType filter, bool sub) {
 	vector<string> v;
 	auto dir = opendir(dirName.data());
 	struct dirent *ent;
@@ -56,4 +58,14 @@ vector<string> Scripts::ForEachFile(const string &dirName, fileFilterType filter
 		closedir(dir);
 	}
 	return v;
+}
+
+void KsScripts::LoadLuaScript(const string &scriptPath) {
+	if (scriptPath.size() == 0) {
+		cout << " scriptPath is null!" << endl;
+		return;
+	}
+	for (auto script : ForEachFile(scriptPath, defaultIsFilter, false)) {
+		luaScripts.push_back(script);
+	}
 }

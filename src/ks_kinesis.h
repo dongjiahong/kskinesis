@@ -19,14 +19,15 @@ public:
 
 		// 创建客户端配置类
 		ClientConfiguration clientConfiguration;
-		// 设置客户端的region，不配置无法正常运行
-		clientConfiguration.region = Aws::String("ap-southeast-1");
+		// 设置客户端的region，不配置无法正常运行 "ap-southeast-1"
+		clientConfiguration.region = m_partition;
 		// 设置线程池 10 个线程
 		clientConfiguration.executor = Aws::MakeShared<Aws::Utils::Threading::PooledThreadExecutor>("sample", 10);
 		// 实例化客户端
 		m_client = Aws::New<KinesisClient> ("sample", clientConfiguration);
 
 		m_streamDataIterator = "";
+		m_describeStreamOutcome = nullptr;
 	}
 
 	// 销毁实例
@@ -35,14 +36,22 @@ public:
 	}
 
 	// 查看流信息
-	void StreamDescription();
+	void KsStreamDescription();
 
 	// 上传数据接口
-	void StreamDataPush(const Aws::Vector<ByteBuffer>& data);
+	void KsStreamDataPush(const Aws::Vector<ByteBuffer>& data);
 
 	// 拉取数据接口
-	void StreamDataPull();
+	Aws::Vector<Record> KsStreamDataPull();
 
+	// 将ByteBuffer 转换为 string
+	string ByteBufferToString(const ByteBuffer &b) {
+		string res("");
+		for (size_t i = 0; i < b.GetLength(); ++i) {
+			res += b.GetItem(i);
+		}
+		return res;
+	}
 private:
 	Aws::String SetStreamDataIteratorHorizon(const Aws::String streamName, const Aws::String shardId);
 
@@ -55,9 +64,11 @@ private:
 	void OnGetRecordsAsyncOutcomeReceived(const KinesisClient*, const Model::GetRecordsRequest&,
 			const Model::GetRecordsOutcome& outcome, const shared_ptr<const AsyncCallerContext>&);
 
+
 	KinesisClient *m_client;
 	Aws::String m_partition;
 	Aws::String m_streamName;
+	Aws::Kinesis::Model::DescribeStreamOutcome *m_describeStreamOutcome;
 
 	Aws::String m_streamDataIterator;
 };
