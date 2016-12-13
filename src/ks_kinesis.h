@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _KS_KINESIS_H_
+#define _KS_KINESIS_H_
 
 #include <aws/core/Aws.h>
 #include <aws/kinesis/KinesisClient.h>
@@ -72,3 +73,4 @@ private:
 
 	Aws::String m_streamDataIterator;
 };
+#endif

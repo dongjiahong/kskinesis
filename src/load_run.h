@@ -1,3 +1,5 @@
+#ifndef _LOAD_RUN_H_
+#define _LOAD_RUN_H_
 
 extern "C" {
     #include "lua.h"
@@ -121,3 +123,4 @@ private:
 	lua_State* luaEnv;
 	vector<string> luaScripts;
 };
+#endif

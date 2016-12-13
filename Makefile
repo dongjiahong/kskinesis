@@ -20,6 +20,7 @@ kinesis:
 test:
 	g++ -o bin/load_test src/load_run.cpp src/test_load_run.cpp --std=c++11 ${LUA_FLAG}
 	g++ -o bin/ks_test src/ks_kinesis.cpp src/test_ks_kinesis.cpp ${KINESIS_FLAG}
+	g++ -o bin/timer_test src/ks_timer.cpp src/test_ks_timer.cpp --std=c++11
 
 clean:
 	@rm bin/ks_kinesis

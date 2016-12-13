@@ -29,7 +29,7 @@ int main() {
 		for (auto rs : ks.KsStreamDataPull()) {
 			ByteBuffer b = rs.GetData();
 			string parameterString = ks.ByteBufferToString(b);
-			// 通过脚本调用函数
+			// 通过lua脚本调用逻辑函数
 			if (!ksc.Process(parameterString)) {
 				cout << "Process err, script name: " << script << endl;
 				continue;
