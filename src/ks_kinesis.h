@@ -7,6 +7,8 @@
 #include <aws/core/utils/threading/Executor.h>
 #include <aws/kinesis/model/PutRecordRequest.h>
 
+#include "ks_timer.h"
+
 using namespace Aws::Kinesis;
 using namespace Aws::Client;
 using namespace Aws::Utils;
@@ -43,7 +45,13 @@ public:
 	void KsStreamDataPush(const Aws::Vector<ByteBuffer>& data);
 
 	// 拉取数据接口
-	Aws::Vector<Record> KsStreamDataPull();
+	void KsStreamDataPull();
+	//Aws::Vector<Record> KsStreamDataPull();
+	
+	// 获取log记录
+	Aws::Vector<Record>& KsGetDataRecords() {
+		return m_dataRecords;
+	}
 
 	// 将ByteBuffer 转换为 string
 	string ByteBufferToString(const ByteBuffer &b) {
@@ -53,6 +61,7 @@ public:
 		}
 		return res;
 	}
+
 private:
 	Aws::String SetStreamDataIteratorHorizon(const Aws::String streamName, const Aws::String shardId);
 
@@ -69,8 +78,10 @@ private:
 	KinesisClient *m_client;
 	Aws::String m_partition;
 	Aws::String m_streamName;
+	Aws::Vector<Record> m_dataRecords;
 	Aws::Kinesis::Model::DescribeStreamOutcome *m_describeStreamOutcome;
 
 	Aws::String m_streamDataIterator;
+
 };
 #endif

@@ -1,4 +1,5 @@
 #include "ks_kinesis.h"
+#include <chrono>
 #include <string>
 
 using namespace std;
@@ -16,21 +17,22 @@ int main() {
 	KsKinesis ks("gift", "ap-southeast-1");
 	ks.KsStreamDescription();
 
-	//for (auto i=0; i < 0; i++) {
-		//Aws::String event("{age: 3, num:2}");
-		////Aws::String event("{\"age\": 3, \"num\":2}");
-		//cout << event << endl;
-		//ks.KsStreamDataPush({ ByteBuffer((unsigned char*)event.c_str(), event.length()) });
-	//}
+	for (auto i=0; i < 10; i++) {
+		Aws::String event("{\"age\": 3}");
+		cout << event << endl;
+		ks.KsStreamDataPush({ ByteBuffer((unsigned char*)event.c_str(), event.length()) });
+	}
 
-	for (auto rs : ks.KsStreamDataPull() ) {
+	for (auto rs : ks.KsGetDataRecords() ) {
 		ByteBuffer b = rs.GetData();
 		cout << ks.ByteBufferToString(b) << endl;
 	}
 	
 	//testByteBuffer("aassbb #  tsst");
 	//testByteBuffer(Aws::String("aassbb"));
+	
 
+	this_thread::sleep_for(chrono::milliseconds(5000));
 	Aws::ShutdownAPI(options);
 	return 0;
 }

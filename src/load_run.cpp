@@ -6,66 +6,42 @@
 
 using namespace std;
 
-fileFilterType defaultIsFilter = [](const char*, const char*) {return true;};
-
-// 判断是否是文件夹
-bool KsScripts::IsFolder(const char* dirName) {
-	if ( dirName == nullptr) {
-		cout << "IsFolder:: dirName is nullptr";
+// 执行脚本函数process
+bool KsScripts::Process(const string &log) {
+	lua_getglobal(luaEnv, "process");
+	lua_pushstring(luaEnv, log.c_str());
+	int iRet = lua_pcall(luaEnv, 1, 1, 0);
+	if (iRet) {
+		PrintStackTopError();
 		return false;
 	}
 
-	auto dir = opendir(dirName);
-	if (dir) {
-		closedir(dir);
-		return true;
+	if (lua_isnumber(luaEnv, -1)) {
+		double v = lua_tonumber(luaEnv, -1);
+		cout << " the result is :" << v << endl;
 	}
-	return false;
+
+	return true;
 }
 
-// 判断是否是文件夹
-bool KsScripts::IsFolder(const string &dirName) {
-	if (dirName.empty()) {
-		cout << "IsFoler:: dirName is empty" << endl;
+bool KsScripts::InitLuaScript(const string luaScript) {
+	if (luaEnv == nullptr) {
+		PrintStackTopError();
 		return false;
 	}
-	return IsFolder(dirName.data());
+	int bRet = luaL_loadfile(luaEnv, luaScript.c_str());
+	if (bRet) {
+		PrintStackTopError();
+	}
+	return true;
 }
 
-vector<string> KsScripts::ForEachFile(const string &dirName, fileFilterType filter, bool sub) {
-	vector<string> v;
-	auto dir = opendir(dirName.data());
-	struct dirent *ent;
-	if (dir) {
-		while ((ent = readdir(dir)) != nullptr) {
-			//auto p = string(dirName).append("/").append(ent->d_name);
-			auto p = string(dirName).append(ent->d_name);
-			if (sub) {
-				if (0 == strcmp(ent->d_name, "..") || 0 == strcmp(ent->d_name, ".")) {
-					continue;
-				} else if (IsFolder(p)) {
-					auto r = ForEachFile(p, filter, sub);
-					v.insert(v.end(), r.begin(), r.end());
-					continue;
-				}
-			}
-			if (sub || !IsFolder(p)) { // 如果是文件， 则调用文件过滤器
-				if (filter(dirName.data(), ent->d_name)) {
-					v.emplace_back(p);
-				}
-			}
-		}
-		closedir(dir);
+bool KsScripts::CallLuaScript() {
+	int bRet = lua_pcall(luaEnv, 0, 0, 0);
+	if (bRet) {
+		cout << "pcall error" << endl;
+		PrintStackTopError();
+		return false;
 	}
-	return v;
-}
-
-void KsScripts::LoadLuaScript(const string &scriptPath) {
-	if (scriptPath.size() == 0) {
-		cout << " scriptPath is null!" << endl;
-		return;
-	}
-	for (auto script : ForEachFile(scriptPath, defaultIsFilter, false)) {
-		luaScripts.push_back(script);
-	}
+	return true;
 }

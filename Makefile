@@ -1,7 +1,7 @@
 
 
 KINESIS_FLAG = --std=c++11 -laws-cpp-sdk-kinesis -laws-cpp-sdk-core
-KS_SRC = src/ks_kinesis.cpp src/load_run.cpp src/client.cpp
+KS_SRC = src/ks_kinesis.cpp src/load_run.cpp src/client.cpp src/tools.cpp
 LUA_FLAG = -llua -ldl -lm
 
 .PHONY: all clean

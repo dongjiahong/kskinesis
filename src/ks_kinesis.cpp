@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #include "ks_kinesis.h"
+#include "tools.h"
 
 using namespace std;
 using namespace Aws::Client;
@@ -63,7 +64,8 @@ void KsKinesis::KsStreamDescription() {
 	}
 }
 
-Aws::Vector<Record> KsKinesis::KsStreamDataPull() {
+void KsKinesis::KsStreamDataPull() {
+//Aws::Vector<Record> KsKinesis::KsStreamDataPull() {
 	Aws::Vector<Record> res;
 	GetRecordsRequest getRecordsRequest;
 	getRecordsRequest.SetLimit(10);
@@ -72,29 +74,46 @@ Aws::Vector<Record> KsKinesis::KsStreamDataPull() {
 		getRecordsRequest.SetShardIterator(iter);
 	} else {
 		cout << "get iterator err " << endl;
-		return res;
+		return;
 	}
 
-	//while(true) {
-	for (auto i = 1; i < 30; i++){
+	int cnt = 0;
+	while(true) {
 		GetRecordsOutcome outcome = m_client->GetRecords(getRecordsRequest);
 		if (outcome.IsSuccess()) {
 			Aws::Vector<Record> rs= outcome.GetResult().GetRecords();
 			if (rs.size()) {
 				res.insert(res.end(), rs.begin(), rs.end());
 			}
-			//for (auto r : rs) {
-				//ByteBuffer b = r.GetData();
-				//cout << b.GetUnderlyingData() << endl;
-			//}
-			cout << "---->>>>> get num: "<< i << "<<-------" << endl;
+			++cnt;
+			cout << "---->>>>> get num: "<< cnt << "<<-------" << endl;
 		} else {
 			cout << "get records err : " << outcome.GetError().GetMessage() << endl;
 		}
 		getRecordsRequest.SetShardIterator(outcome.GetResult().GetNextShardIterator());
-		//::sleep(1);
+		
+		if (cnt == 40) {
+			lock_guard<mutex> locker(tools::dataMutex);
+			m_dataRecords.swap(res);	
+			res.clear();
+			cnt = 0;
+			tools::dataReady = true; // 数据准备好了
+		}
+		tools::dataCon.notify_all(); // 通知处理程序处理数据
+
+		{
+			unique_lock<mutex> locker(tools::dataMutex);
+			tools::dataCon.wait(locker, []{
+				if (tools::runDataThreadNum == 0) {
+					return tools::dataProcess;  // 只有在所有消费线程都处理完后，才继续加载数据
+				} else {
+					return false; // 还有消费线程在消费
+				}
+			}); // 阻塞处理程序是否完成
+
+			tools::dataProcess = false;
+		}
 	}
-	return res;
 }
 
 Aws::String KsKinesis::SetStreamDataIteratorHorizon(const Aws::String streamName, const Aws::String shardId) {
@@ -147,7 +166,7 @@ void KsKinesis::OnDescribeStreamOutcomeReceived(const KinesisClient*, const Mode
 
 }
 
-int xmain() {
+int mainx() {
 	Aws::SDKOptions options;
 	Aws::InitAPI(options);
 
@@ -165,7 +184,7 @@ int xmain() {
 
 	ks.KsStreamDescription();
 
-	for (auto rs:ks.KsStreamDataPull()) {
+	for (auto rs:ks.KsGetDataRecords()) {
 		ByteBuffer b = rs.GetData();
 		cout << b.GetUnderlyingData() << endl;
 	}
