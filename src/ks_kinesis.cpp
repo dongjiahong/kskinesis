@@ -65,7 +65,6 @@ void KsKinesis::KsStreamDescription() {
 }
 
 void KsKinesis::KsStreamDataPull() {
-//Aws::Vector<Record> KsKinesis::KsStreamDataPull() {
 	Aws::Vector<Record> res;
 	GetRecordsRequest getRecordsRequest;
 	getRecordsRequest.SetLimit(10);
@@ -86,32 +85,39 @@ void KsKinesis::KsStreamDataPull() {
 				res.insert(res.end(), rs.begin(), rs.end());
 			}
 			++cnt;
-			cout << "---->>>>> get num: "<< cnt << "<<-------" << endl;
+			cout << "---->>>>> get num: "<< cnt << "<<-sizeof(res)---"<< res.size() << endl;
 		} else {
 			cout << "get records err : " << outcome.GetError().GetMessage() << endl;
 		}
 		getRecordsRequest.SetShardIterator(outcome.GetResult().GetNextShardIterator());
+
 		
 		if (cnt == 40) {
-			lock_guard<mutex> locker(tools::dataMutex);
-			m_dataRecords.swap(res);	
-			res.clear();
-			cnt = 0;
-			tools::dataReady = true; // 数据准备好了
-		}
-		tools::dataCon.notify_all(); // 通知处理程序处理数据
+			{
+				lock_guard<mutex> locker(tools::dataMutex);
+				m_dataRecords.swap(res);	
+				res.clear();
+				cnt = 0;
+				tools::dataReady = true; // 数据准备好了
+			}
 
-		{
-			unique_lock<mutex> locker(tools::dataMutex);
-			tools::dataCon.wait(locker, []{
-				if (tools::runDataThreadNum == 0) {
-					return tools::dataProcess;  // 只有在所有消费线程都处理完后，才继续加载数据
-				} else {
-					return false; // 还有消费线程在消费
-				}
-			}); // 阻塞处理程序是否完成
+			tools::dataCon.notify_all(); // 通知处理程序处理数据
+			cout << "notify_all script" << endl;
 
-			tools::dataProcess = false;
+			{
+				unique_lock<mutex> locker(tools::dataMutex);
+				cout << "wait all script done" << endl;
+				tools::dataCon.wait(locker, []{
+					if (tools::runDataThreadNum == 0) {
+						return tools::dataProcess;  // 只有在所有消费线程都处理完后，才继续加载数据
+					} else {
+						return false; // 还有消费线程在消费
+					}
+					}); // 阻塞处理程序是否完成
+
+				tools::dataProcess = false;
+				cout << "all script done" << endl;
+			}
 		}
 	}
 }

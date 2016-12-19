@@ -1,8 +1,10 @@
 #include "load_run.h"
+#include "tools.h"
 
 using namespace std;
+using namespace tools;
 
-fileFilterType defaultIsFilterx = [](const char *, const char *){return true;};
+tools::fileFilterType defaultIsFilterx = [](const char *, const char *){return true;};
 
 //vector<string> Is(const string& dirName, bool sub = false) {
 	//return ForEachFile(dirName, defaultIsFilter, sub);
@@ -11,7 +13,7 @@ fileFilterType defaultIsFilterx = [](const char *, const char *){return true;};
 int main() {
 	KsScripts sc;
 
-	for (auto file : sc.ForEachFile("./", defaultIsFilterx, false)) {
-		cout << file << endl;
-	}
+	//for (auto file : tools::ForEachFile("./", defaultIsFilterx, false)) {
+		//cout << file << endl;
+	//}
 }

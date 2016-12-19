@@ -1,15 +1,17 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
+#include <string.h>
 
 #include "tools.h"
+#include <memory>
 
 using namespace std;
-using namespace tools;
+//using namespace tools;
 
-fileFilterType defaultIsFilter = [](const char*, const char*) {return true;};
+//tools::fileFilterType defaultIsFilter = [](const char*, const char*) {return true;};
 
-void AsyncCallWithInterval(int interval, function<void()> task) {
+void tools::AsyncCallWithInterval(int interval, function<void()> task) {
 	thread([interval, task] {
 		while (true) {
 			this_thread::sleep_for(chrono::milliseconds(interval));
@@ -18,20 +20,25 @@ void AsyncCallWithInterval(int interval, function<void()> task) {
 	}).detach();
 }
 
-void AsyncCall(function<void()> task) {
-	thread([task] {
-		task();
-	}).detach();
+void tools::AsyncCall(function<void()> task) {
+	//thread([task] {
+		//task();
+	//}).detach();
+	thread t(task);
+	t.detach();
 }
 
-void AsyncCallWithWR(function<void(void *, void *)> task) {
-	thread([task] {
-		task();
-	}).detach();
+void tools::AsyncCallWithWR(void *w, void *r, function<void(void *, void *)> task) {
+	//thread([task] {
+		//task();
+	//}).detach();
+	cout << "AsyncCallWithWR .." << endl;
+	thread t(task, w, r);
+	t.detach();
 }
 
 // 判断是否是文件夹
-bool IsFolder(const char* dirName) {
+bool tools::IsFolder(const char* dirName) {
 	if ( dirName == nullptr) {
 		cout << "IsFolder:: dirName is nullptr";
 		return false;
@@ -46,7 +53,7 @@ bool IsFolder(const char* dirName) {
 }
 
 // 判断是否是文件夹
-bool IsFolder(const string &dirName) {
+bool tools::IsFolder(const string &dirName) {
 	if (dirName.empty()) {
 		cout << "IsFoler:: dirName is empty" << endl;
 		return false;
@@ -54,7 +61,7 @@ bool IsFolder(const string &dirName) {
 	return IsFolder(dirName.data());
 }
 
-vector<string> ForEachFile(const string &dirName, fileFilterType filter, bool sub = false) {
+vector<string> tools::ForEachFile(const string &dirName, fileFilterType filter, bool sub) {
 	vector<string> v;
 	auto dir = opendir(dirName.data());
 	struct dirent *ent;
@@ -66,7 +73,7 @@ vector<string> ForEachFile(const string &dirName, fileFilterType filter, bool su
 				if (0 == strcmp(ent->d_name, "..") || 0 == strcmp(ent->d_name, ".")) {
 					continue;
 				} else if (IsFolder(p)) {
-					auto r = tools::ForEachFile(p, filter, sub);
+					auto r = ForEachFile(p, filter, sub);
 					v.insert(v.end(), r.begin(), r.end());
 					continue;
 				}
@@ -82,12 +89,14 @@ vector<string> ForEachFile(const string &dirName, fileFilterType filter, bool su
 	return v;
 }
 
-void LoadLuaScript(const string &scriptPath) {
+void tools::LoadLuaScript(const string &scriptPath) {
 	if (scriptPath.size() == 0) {
 		cout << " scriptPath is null!" << endl;
 		return;
 	}
-	for (auto script : tools::ForEachFile(scriptPath, defaultIsFilter, false)) {
-		luaScripts.push_back(script);
+    //for (auto script : ForEachFile(scriptPath, defaultIsFilter, false)) {
+    {
+	//	luaScripts.push_back(script);
 	}
+    cout << "toos::luaScripts size:" << tools::luaScripts.size()<< endl;
 }

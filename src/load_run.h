@@ -65,7 +65,6 @@ private:
 		}
 	}
 
-
 	lua_State* luaEnv;
 };
 #endif

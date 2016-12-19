@@ -8,6 +8,7 @@ using namespace std;
 
 // 执行脚本函数process
 bool KsScripts::Process(const string &log) {
+	cout << "Process script dong..." << endl;
 	lua_getglobal(luaEnv, "process");
 	lua_pushstring(luaEnv, log.c_str());
 	int iRet = lua_pcall(luaEnv, 1, 1, 0);
