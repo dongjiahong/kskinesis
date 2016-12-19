@@ -13,15 +13,9 @@ using namespace std;
 
 namespace tools{
 
-static mutex dataMutex;
-static condition_variable dataCon;
-static bool dataReady = false;
-static bool dataProcess = false;
-static int runDataThreadNum = 0; // 数据处理线程的全局标识
-
-static vector<string> luaScripts;
-
 using fileFilterType = function<bool(const char *, const char *)>;
+
+//fileFilterType defaultIsFilter = [](const char*, const char*) {return true;};
 
 void AsyncCallWithInterval(int interval, std::function<void()> task);
 void AsyncCall(std::function<void()> task);
@@ -30,13 +24,6 @@ void AsyncCallWithWR(void *w, void *r, std::function<void(void *, void *)> task)
 // 循环遍历文件夹
 vector<string> ForEachFile(const string &dirName, fileFilterType filter, bool sub = false);
 
-// 加载lua脚本
-void LoadLuaScript(const string &scriptPath);
-
-static vector<string> GetLuaScripts() {
-	cout << "GetLuaScripts size:" << luaScripts.size() << endl;
-	return luaScripts;
-}
 // 字符串转小写
 inline string toLower(const string &src) {
 	auto dst = src;

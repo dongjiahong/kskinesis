@@ -7,9 +7,6 @@
 #include <memory>
 
 using namespace std;
-//using namespace tools;
-
-//tools::fileFilterType defaultIsFilter = [](const char*, const char*) {return true;};
 
 void tools::AsyncCallWithInterval(int interval, function<void()> task) {
 	thread([interval, task] {
@@ -21,17 +18,11 @@ void tools::AsyncCallWithInterval(int interval, function<void()> task) {
 }
 
 void tools::AsyncCall(function<void()> task) {
-	//thread([task] {
-		//task();
-	//}).detach();
 	thread t(task);
 	t.detach();
 }
 
 void tools::AsyncCallWithWR(void *w, void *r, function<void(void *, void *)> task) {
-	//thread([task] {
-		//task();
-	//}).detach();
 	cout << "AsyncCallWithWR .." << endl;
 	thread t(task, w, r);
 	t.detach();
@@ -87,16 +78,4 @@ vector<string> tools::ForEachFile(const string &dirName, fileFilterType filter, 
 		closedir(dir);
 	}
 	return v;
-}
-
-void tools::LoadLuaScript(const string &scriptPath) {
-	if (scriptPath.size() == 0) {
-		cout << " scriptPath is null!" << endl;
-		return;
-	}
-    //for (auto script : ForEachFile(scriptPath, defaultIsFilter, false)) {
-    {
-	//	luaScripts.push_back(script);
-	}
-    cout << "toos::luaScripts size:" << tools::luaScripts.size()<< endl;
 }

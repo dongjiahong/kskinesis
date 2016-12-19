@@ -8,6 +8,7 @@
 #include <aws/kinesis/model/PutRecordRequest.h>
 
 #include "ks_timer.h"
+#include "base.h"
 
 using namespace Aws::Kinesis;
 using namespace Aws::Client;
@@ -15,7 +16,7 @@ using namespace Aws::Utils;
 using namespace Aws::Kinesis::Model;
 using namespace std;
 
-class KsKinesis {
+class KsKinesis : public Base {
 public:
 	KsKinesis(const Aws::String& streamName, const Aws::String& partition) :
 		m_partition(partition), m_streamName(streamName) {

@@ -1,5 +1,5 @@
-#ifndef _LOAD_RUN_H_
-#define _LOAD_RUN_H_
+#ifndef _KS_SCRIPT_H_
+#define _KS_SCRIPT_H_
 
 extern "C" {
     #include "lua.h"
@@ -8,7 +8,6 @@ extern "C" {
 	#pragma comment(lib, "lua.lib")
 }
 
-
 #include <iostream>
 #include <string.h>
 #include <functional>
@@ -16,14 +15,14 @@ extern "C" {
 #include <vector>
 #include <dirent.h>
 
+#include "base.h"
+
 using namespace std;
 
-using fileFilterType = function<bool(const char *, const char *)>;
-
-class KsScripts {
+class KsScripts : public Base {
 
 public:
-	KsScripts() {
+	KsScripts(const string &name) : scriptName(name) {
 		// 创建lua环境
 		luaEnv = luaL_newstate();
 
@@ -40,17 +39,15 @@ public:
 		}
 	}
 
-
 	// get luaEnv
 	lua_State* GetLuaEnv() { return luaEnv; }
 	// 初始化脚本文件
 	bool InitLuaScript(const string luaScript);
-
-	bool CallLuaScript();
-
 	// 执行脚本函数process
 	bool Process(const string &log);
+	string GetScriptName() {return scriptName;}
 
+	// ----------文件操作
 
 protected:
 
@@ -59,12 +56,14 @@ private:
 	void PrintStackTopError() {
 		if (luaEnv != nullptr) {
 			const char *pErrorMsg = lua_tostring(luaEnv, -1); // -1 表示栈顶
-			cout << " Scripts::PrintStackError " << pErrorMsg << endl;
+			cout << "Scripts::PrintStackError " << pErrorMsg << endl;
 		} else {
 			cout << "no initialize lua env!" << endl;
 		}
 	}
 
 	lua_State* luaEnv;
+	string scriptName;
 };
+
 #endif

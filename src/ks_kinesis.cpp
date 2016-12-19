@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 #include "ks_kinesis.h"
-#include "tools.h"
+#include "base.h"
 
 using namespace std;
 using namespace Aws::Client;
@@ -92,30 +92,30 @@ void KsKinesis::KsStreamDataPull() {
 		getRecordsRequest.SetShardIterator(outcome.GetResult().GetNextShardIterator());
 
 		
-		if (cnt == 40) {
+		if (cnt == 20) {
 			{
-				lock_guard<mutex> locker(tools::dataMutex);
+				lock_guard<mutex> locker(dataMutex);
 				m_dataRecords.swap(res);	
 				res.clear();
 				cnt = 0;
-				tools::dataReady = true; // 数据准备好了
+				dataReady = true; // 数据准备好了
 			}
 
-			tools::dataCon.notify_all(); // 通知处理程序处理数据
+			dataCon.notify_all(); // 通知处理程序处理数据
 			cout << "notify_all script" << endl;
 
 			{
-				unique_lock<mutex> locker(tools::dataMutex);
+				unique_lock<mutex> locker(dataMutex);
 				cout << "wait all script done" << endl;
-				tools::dataCon.wait(locker, []{
-					if (tools::runDataThreadNum == 0) {
-						return tools::dataProcess;  // 只有在所有消费线程都处理完后，才继续加载数据
+				dataCon.wait(locker, []{
+					if (runDataThreadNum == 0) {
+						return dataProcess;  // 只有在所有消费线程都处理完后，才继续加载数据
 					} else {
 						return false; // 还有消费线程在消费
 					}
 					}); // 阻塞处理程序是否完成
 
-				tools::dataProcess = false;
+				dataProcess = false;
 				cout << "all script done" << endl;
 			}
 		}
