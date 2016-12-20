@@ -16,6 +16,7 @@ kinesis:
 test:
 	g++ -o bin/ks_test src/base.cpp src/ks_kinesis.cpp src/test_ks_kinesis.cpp ${KINESIS_FLAG}
 	g++ -o bin/timer_test src/ks_timer.cpp src/test_ks_timer.cpp --std=c++11
+	g++ -o bin/ks_scripts_test src/base.cpp src/ks_script.cpp src/test_ks_script.cpp --std=c++11 ${LUA_FLAG}
 
 clean:
 	@rm bin/ks_kinesis

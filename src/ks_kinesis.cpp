@@ -76,48 +76,44 @@ void KsKinesis::KsStreamDataPull() {
 		return;
 	}
 
-	int cnt = 0;
 	while(true) {
-		GetRecordsOutcome outcome = m_client->GetRecords(getRecordsRequest);
-		if (outcome.IsSuccess()) {
-			Aws::Vector<Record> rs= outcome.GetResult().GetRecords();
-			if (rs.size()) {
-				res.insert(res.end(), rs.begin(), rs.end());
-			}
-			++cnt;
-			cout << "---->>>>> get num: "<< cnt << "<<-sizeof(res)---"<< res.size() << endl;
-		} else {
-			cout << "get records err : " << outcome.GetError().GetMessage() << endl;
-		}
-		getRecordsRequest.SetShardIterator(outcome.GetResult().GetNextShardIterator());
-
-		
-		if (cnt == 20) {
-			{
-				lock_guard<mutex> locker(dataMutex);
-				m_dataRecords.swap(res);	
-				res.clear();
-				cnt = 0;
-				dataReady = true; // 数据准备好了
-			}
-
-			dataCon.notify_all(); // 通知处理程序处理数据
-			cout << "notify_all script" << endl;
-
-			{
-				unique_lock<mutex> locker(dataMutex);
-				cout << "wait all script done" << endl;
-				dataCon.wait(locker, []{
-					if (runDataThreadNum == 0) {
-						return dataProcess;  // 只有在所有消费线程都处理完后，才继续加载数据
-					} else {
-						return false; // 还有消费线程在消费
+		{
+			unique_lock<mutex> locker(dataMutex);
+			for (size_t i=0; i < 20; i++) {
+				GetRecordsOutcome outcome = m_client->GetRecords(getRecordsRequest);
+				if (outcome.IsSuccess()) {
+					Aws::Vector<Record> rs= outcome.GetResult().GetRecords();
+					if (rs.size()) {
+						res.insert(res.end(), rs.begin(), rs.end());
 					}
-					}); // 阻塞处理程序是否完成
-
-				dataProcess = false;
-				cout << "all script done" << endl;
+					cout << "---->>>>>-sizeof(res)---"<< res.size() << endl;
+				} else {
+					cout << "get records err : " << outcome.GetError().GetMessage() << endl;
+				}
+				getRecordsRequest.SetShardIterator(outcome.GetResult().GetNextShardIterator());
 			}
+
+			m_dataRecords.swap(res);	
+			res.clear();
+			dataReady = true; // 数据准备好了
+		}
+
+		dataCon.notify_all(); // 通知处理程序处理数据
+		cout << "notify_all script" << endl;
+
+		{
+			unique_lock<mutex> locker(dataMutex);
+			cout << "wait all script done" << endl;
+			dataCon.wait(locker, []{
+				if (runDataThreadNum == 0) {
+					return dataProcess;  // 只有在所有消费线程都处理完后，才继续加载数据
+				} else {
+					return false; // 还有消费线程在消费
+				}
+			}); // 阻塞处理程序是否完成
+
+			dataProcess = false;
+			cout << "all script done" << endl;
 		}
 	}
 }

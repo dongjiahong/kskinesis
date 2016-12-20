@@ -10,17 +10,15 @@ using namespace std;
 // 执行脚本函数process
 bool KsScripts::Process(const string &log) {
 	string name = GetScriptName();
-	cout << name <<" :Process script dong..." << endl;
 	if (luaEnv == nullptr) {
 		cout << name << " luaEnv is nullptr" << endl;
 		return false;
 	}
-	lua_getglobal(luaEnv, "process");
 
-	cout << name <<" :pushstring..." << endl;
+	lua_getglobal(luaEnv, "handle_log");
+
 	lua_pushstring(luaEnv, log.c_str());
 
-	cout << name <<" :pcall ..." << endl;
 	int iRet = lua_pcall(luaEnv, 1, 1, 0);
 	if (iRet) {
 		PrintStackTopError();
